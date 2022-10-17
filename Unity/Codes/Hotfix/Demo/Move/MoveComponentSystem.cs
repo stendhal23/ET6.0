@@ -82,11 +82,11 @@ namespace ET
             return true;
         }
 
-        public static async ETTask<bool> MoveToAsync(this MoveComponent self, List<Vector3> target, float speed, int turnTime = 100, ETCancellationToken cancellationToken = null)
+        public static async ETTask<bool> MoveToAsync(this MoveComponent self, List<Vector3> path, float speed, int turnTime = 100, ETCancellationToken cancellationToken = null)
         {
             self.Stop();
 
-            foreach (Vector3 v in target)
+            foreach (Vector3 v in path)
             {
                 self.Targets.Add(v);
             }
@@ -126,8 +126,91 @@ namespace ET
 
         public static void MoveForward(this MoveComponent self, bool needCancel)
         {
+            ////<=========== B6699817 我改后的代码.  逻辑上清晰一些
+            //Unit unit = self.GetParent<Unit>();
+
+            ////
+
+            //// 目标是: 给定客户端时间 t, 问在这个 t 时, 单位的 transform 信息。 
+            //// 注意, 我们计算 时间预算 时, 不是  = 此次 MoveForward 时的客户端时间 - 上次 MoveForward 的客户端时间
+            //// 而是每次都退回到上次确定当前 目标 pos 时的时间的。 即: = 此次 MoveForward 时的客户端时间 - 上次 确定 self.NextTarget 时的客户端时间; 
+
+            //// 当前客户端时间 t
+            //long timeNow = TimeHelper.ClientNow();
+            //// self.NextTarget 为单位此时欲达到的位置 pos B (为Path中的一个节点);
+            //// self.StartTime 为走到上一个 pos A,并开始往 pos B 走时纪录的客户端时间. 
+            //// moveTime = timeNow - self.StartTime; 即此次 MoveForward 的时间预算。 
+            //long moveTime = timeNow - self.StartTime;       
+
+
+            ////在时间预算 moveTime 耗光前, 走到哪个位置. 
+            //while (moveTime > 0)
+            //{
+            //    // 时间预算足够走到当前的目标位置 pos B
+            //    if (moveTime >= self.NeedTime)
+            //    {
+            //        //走到当前的目标位置 pos B
+            //        unit.Position = self.NextTarget;
+            //        if (self.TurnTime > 0)
+            //        {
+            //            unit.Rotation = self.To;
+            //        }
+
+            //        //我们已走到 pos B
+            //        //如果 pos B 是 Path 上最后一个节点, do callback 以告知整个MoveAsync结束, MoveForward自身也返回;
+            //        //否则 找到 Path 中 pos B 的下一个节点 pos C; 
+            //        if (self.N >= self.Targets.Count - 1)
+            //        {
+            //            unit.Position = self.NextTarget;
+            //            unit.Rotation = self.To;
+
+            //            Action<bool> callback = self.Callback;
+            //            self.Callback = null;
+
+            //            self.Clear();
+            //            callback?.Invoke(!needCancel);
+            //            return;
+            //        }
+            //        else
+            //        {
+            //            self.SetNextTarget();
+            //        }
+
+            //    }
+            //    // 时间预算不足够走到当前的目标位置 pos B, 则计算 transform 的插值
+            //    else
+            //    {
+            //        // 计算位置插值
+            //        float amount = moveTime * 1f / self.NeedTime;
+            //        if (amount > 0)
+            //        {
+            //            Vector3 newPos = Vector3.Lerp(self.StartPos, self.NextTarget, amount);
+            //            unit.Position = newPos;
+            //        }
+
+            //        // 计算方向插值
+            //        if (self.TurnTime > 0)
+            //        {
+            //            amount = moveTime * 1f / self.TurnTime;
+            //            Quaternion q = Quaternion.Slerp(self.From, self.To, amount);
+            //            unit.Rotation = q;
+            //        }
+            //    }
+
+            //    // 时间预算 -= 走到 pos B 所需时间, 
+            //    moveTime -= self.NeedTime;
+
+            //}
+
+            //===========> B6699817 我改后的代码.  逻辑上清晰一些
+
+
+
+            #region B6699817 原作者的代码.
+            //=========== B6699817 原作者的代码.
+
             Unit unit = self.GetParent<Unit>();
-            
+
             long timeNow = TimeHelper.ClientNow();
             long moveTime = timeNow - self.StartTime;
 
@@ -137,7 +220,7 @@ namespace ET
                 {
                     return;
                 }
-                
+
                 // 计算位置插值
                 if (moveTime >= self.NeedTime)
                 {
@@ -156,7 +239,7 @@ namespace ET
                         Vector3 newPos = Vector3.Lerp(self.StartPos, self.NextTarget, amount);
                         unit.Position = newPos;
                     }
-                    
+
                     // 计算方向插值
                     if (self.TurnTime > 0)
                     {
@@ -173,9 +256,9 @@ namespace ET
                 {
                     return;
                 }
-                
+
                 // 到这里说明这个点已经走完
-                
+
                 // 如果是最后一个点
                 if (self.N >= self.Targets.Count - 1)
                 {
@@ -192,6 +275,7 @@ namespace ET
 
                 self.SetNextTarget();
             }
+            #endregion
         }
 
         private static void StartMove(this MoveComponent self)
