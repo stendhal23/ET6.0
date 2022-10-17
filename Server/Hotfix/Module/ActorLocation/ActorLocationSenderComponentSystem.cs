@@ -147,7 +147,7 @@ namespace ET
             
             while (true)
             {
-                if (actorLocationSender.ActorId == 0)
+                if (actorLocationSender.ActorId == 0) //CA96303F 只有因为 actor 不存在(移动了位置) 而 send 失败时才更新 ActorId, 
                 {
                     actorLocationSender.ActorId = await LocationProxyComponent.Instance.Get(actorLocationSender.Id);
                     if (actorLocationSender.InstanceId != instanceId)
@@ -156,11 +156,13 @@ namespace ET
                     }
                 }
 
-                if (actorLocationSender.ActorId == 0)
+                if (actorLocationSender.ActorId == 0) //CA96303F 更新之后 actor 依然不存在, 报错
                 {
                     IActorRequest iActorRequest = (IActorRequest)memoryStream.ToActorMessage();
                     return ActorHelper.CreateResponse(iActorRequest, ErrorCore.ERR_NotFoundActor);
                 }
+
+                //CA96303F 以下为 ActorId 对应的 actor 存在,  
                 IActorResponse response = await ActorMessageSenderComponent.Instance.Call(actorLocationSender.ActorId, rpcId, memoryStream, false);
                 if (actorLocationSender.InstanceId != instanceId)
                 {

@@ -41,8 +41,11 @@ namespace ET
 				Log.Info($"server start........................ {Game.Scene.Id}");
 
 				Game.EventSystem.Publish(new EventType.AppStart());
-				
-				while (true)
+
+                //CA96303F log
+                Console.WriteLine($"---server.app app_type {Game.Options.AppType} started!========");
+
+                while (true)
 				{
 					try
 					{

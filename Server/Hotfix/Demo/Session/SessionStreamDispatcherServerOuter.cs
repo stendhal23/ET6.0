@@ -27,7 +27,7 @@ namespace ET
         public async ETTask DispatchAsync(Session session, ushort opcode, object message)
         {
             // 根据消息接口判断是不是Actor消息，不同的接口做不同的处理
-            switch (message)
+            switch (message)    // CA96303F notes: 这里是 C# 9.0 Pattern Matching in Switch Expressions
             {
                 case IActorLocationRequest actorLocationRequest: // gate session收到actor rpc消息，先向actor 发送rpc请求，再将请求结果返回客户端
                 {
